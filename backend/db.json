@@ -1,0 +1,132 @@
+{
+  "users": [
+    {
+      "id": "1778407013015",
+      "name": "Admin",
+      "email": "admin@example.com",
+      "passwordHash": "$2b$10$Me//75j1WJNAldktY3wMiuVk8nilZaT8PLApNAyssGYemyqzBufNC",
+      "role": "admin",
+      "createdAt": "2026-05-10T09:56:53.015Z"
+    },
+    {
+      "id": "1778413175577",
+      "name": "test",
+      "email": "test@mail.ru",
+      "passwordHash": "$2b$10$D6IBqaL0fXPIGMw2YlT3vOqZv8/GZREkDmhq0xfkNl3WTH1uyJw52",
+      "role": "user",
+      "createdAt": "2026-05-10T11:39:35.577Z"
+    }
+  ],
+  "incidents": [
+    {
+      "id": "1",
+      "title": "Несанкционированный доступ",
+      "description": "Попытка прохода в здание без электронного пропуска",
+      "location": "Корпус 1",
+      "status": "OPEN",
+      "responsible": "Иванов И.И.",
+      "date": "2026-05-10",
+      "createdAt": "2026-05-10T09:00:00.000Z",
+      "updatedAt": "2026-05-10T13:43:32.987Z"
+    },
+    {
+      "id": "2",
+      "title": "Срабатывание пожарной сигнализации",
+      "description": "Ложное срабатывание датчика дыма",
+      "location": "Корпус 2",
+      "status": "CLOSED",
+      "responsible": "Петров А.А.",
+      "date": "2026-05-09",
+      "createdAt": "2026-05-09T10:20:00.000Z",
+      "updatedAt": "2026-05-09T11:00:00.000Z"
+    },
+    {
+      "id": "3",
+      "title": "Подозрительный предмет",
+      "description": "Обнаружена бесхозная сумка возле входа",
+      "location": "Главный вход",
+      "status": "IN_PROGRESS",
+      "responsible": "Сидоров В.В.",
+      "date": "2026-05-08",
+      "createdAt": "2026-05-08T08:40:00.000Z",
+      "updatedAt": "2026-05-08T09:10:00.000Z"
+    },
+    {
+      "id": "4",
+      "title": "Нарушение общественного порядка",
+      "description": "Конфликт между студентами в холле",
+      "location": "Корпус 3",
+      "status": "OPEN",
+      "responsible": "Орлов Д.Д.",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-07T12:30:00.000Z",
+      "updatedAt": "2026-05-07T12:30:00.000Z"
+    },
+    {
+      "id": "5",
+      "title": "Неисправность камеры",
+      "description": "Камера видеонаблюдения не передаёт изображение",
+      "location": "Парковка",
+      "status": "IN_PROGRESS",
+      "responsible": "Морозов Н.Н.",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T14:00:00.000Z",
+      "updatedAt": "2026-05-06T15:20:00.000Z"
+    },
+    {
+      "id": "6",
+      "title": "Проникновение постороннего",
+      "description": "Обнаружен неизвестный человек в лаборатории",
+      "location": "Лаборатория 214",
+      "status": "CLOSED",
+      "responsible": "Васильев П.П.",
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T17:45:00.000Z",
+      "updatedAt": "2026-05-05T18:10:00.000Z"
+    },
+    {
+      "id": "7",
+      "title": "Сбой системы доступа",
+      "description": "Не работают турникеты на входе",
+      "location": "Корпус 1",
+      "status": "OPEN",
+      "responsible": "Кузнецов Е.Е.",
+      "date": "2026-05-04",
+      "createdAt": "2026-05-04T07:30:00.000Z",
+      "updatedAt": "2026-05-04T07:30:00.000Z"
+    },
+    {
+      "id": "8",
+      "title": "Попытка взлома сервера",
+      "description": "Зафиксирована подозрительная активность в сети",
+      "location": "Серверная",
+      "status": "IN_PROGRESS",
+      "responsible": "Фёдоров К.К.",
+      "date": "2026-05-03",
+      "createdAt": "2026-05-03T22:10:00.000Z",
+      "updatedAt": "2026-05-03T22:45:00.000Z"
+    },
+    {
+      "id": "9",
+      "title": "Потеря пропуска",
+      "description": "Студент сообщил об утере электронного пропуска",
+      "location": "Деканат",
+      "status": "CLOSED",
+      "responsible": "Алексеев М.М.",
+      "date": "2026-05-02",
+      "createdAt": "2026-05-02T13:15:00.000Z",
+      "updatedAt": "2026-05-02T13:40:00.000Z"
+    },
+    {
+      "id": "10",
+      "title": "Повреждение оборудования",
+      "description": "Повреждён датчик движения в аудитории",
+      "location": "Аудитория 305",
+      "status": "OPEN",
+      "responsible": "Николаев С.С.",
+      "date": "2026-05-01",
+      "createdAt": "2026-05-01T16:50:00.000Z",
+      "updatedAt": "2026-05-01T16:50:00.000Z"
+    }
+  ]
+}
