@@ -15,39 +15,12 @@ const initialFilters = {
 };
 
 const columns = [
-    {
-        key: 'title',
-        label: 'Название',
-        type: 'text',
-        placeholder: 'Фильтр по названию'
-    },
-    {
-        key: 'description',
-        label: 'Описание',
-        type: 'text',
-        placeholder: 'Фильтр по описанию'
-    },
-    {
-        key: 'location',
-        label: 'Место',
-        type: 'select'
-    },
-    {
-        key: 'date',
-        label: 'Дата',
-        type: 'text',
-        placeholder: 'Например 2026-05'
-    },
-    {
-        key: 'status',
-        label: 'Статус',
-        type: 'select'
-    },
-    {
-        key: 'responsible',
-        label: 'Ответственный',
-        type: 'select'
-    }
+    { key: 'title', label: 'Название', type: 'text', placeholder: 'Фильтр по названию' },
+    { key: 'description', label: 'Описание', type: 'text', placeholder: 'Фильтр по описанию' },
+    { key: 'location', label: 'Место', type: 'select' },
+    { key: 'date', label: 'Дата', type: 'text', placeholder: 'Например 2026-05' },
+    { key: 'status', label: 'Статус', type: 'select' },
+    { key: 'responsible', label: 'Ответственный', type: 'select' }
 ];
 
 const ITEMS_PER_PAGE = 5;
@@ -80,7 +53,6 @@ function Dashboard() {
     const [globalSearch, setGlobalSearch] = useState('');
     const [filters, setFilters] = useState(initialFilters);
     const [openFilter, setOpenFilter] = useState(null);
-
     const [currentPage, setCurrentPage] = useState(1);
 
     const popupRef = useRef(null);
@@ -95,9 +67,7 @@ function Dashboard() {
     }, [globalSearch, filters]);
 
     useEffect(() => {
-        if (!openFilter) {
-            return undefined;
-        }
+        if (!openFilter) return undefined;
 
         function handleClickOutside(event) {
             if (popupRef.current && !popupRef.current.contains(event.target)) {
@@ -237,9 +207,7 @@ function Dashboard() {
     async function deleteIncident(id) {
         const isConfirmed = window.confirm('Удалить этот инцидент?');
 
-        if (!isConfirmed) {
-            return;
-        }
+        if (!isConfirmed) return;
 
         try {
             await api.delete(`/incidents/${id}`, getAuthHeaders());
@@ -256,14 +224,8 @@ function Dashboard() {
     }
 
     function getStatusClass(status) {
-        if (status === 'OPEN') {
-            return 'status-badge status-open';
-        }
-
-        if (status === 'IN_PROGRESS') {
-            return 'status-badge status-progress';
-        }
-
+        if (status === 'OPEN') return 'status-badge status-open';
+        if (status === 'IN_PROGRESS') return 'status-badge status-progress';
         return 'status-badge status-closed';
     }
 
@@ -313,48 +275,30 @@ function Dashboard() {
         const globalValue = normalize(globalSearch);
 
         return incidents.filter(item => {
-            const title = normalize(item.title);
-            const description = normalize(item.description);
-            const location = normalize(item.location);
-            const date = normalize(item.date);
-            const status = normalize(item.status);
-            const responsible = normalize(item.responsible);
+            const itemTitle = normalize(item.title);
+            const itemDescription = normalize(item.description);
+            const itemLocation = normalize(item.location);
+            const itemDate = normalize(item.date);
+            const itemStatus = normalize(item.status);
+            const itemResponsible = normalize(item.responsible);
 
             const matchesGlobal =
                 !globalValue ||
-                title.includes(globalValue) ||
-                description.includes(globalValue) ||
-                location.includes(globalValue) ||
-                date.includes(globalValue) ||
-                status.includes(globalValue) ||
-                responsible.includes(globalValue);
-
-            const matchesTitle =
-                !filters.title || title.includes(normalize(filters.title));
-
-            const matchesDescription =
-                !filters.description || description.includes(normalize(filters.description));
-
-            const matchesLocation =
-                !filters.location || location === normalize(filters.location);
-
-            const matchesDate =
-                !filters.date || date.includes(normalize(filters.date));
-
-            const matchesStatus =
-                !filters.status || status === normalize(filters.status);
-
-            const matchesResponsible =
-                !filters.responsible || responsible === normalize(filters.responsible);
+                itemTitle.includes(globalValue) ||
+                itemDescription.includes(globalValue) ||
+                itemLocation.includes(globalValue) ||
+                itemDate.includes(globalValue) ||
+                itemStatus.includes(globalValue) ||
+                itemResponsible.includes(globalValue);
 
             return (
                 matchesGlobal &&
-                matchesTitle &&
-                matchesDescription &&
-                matchesLocation &&
-                matchesDate &&
-                matchesStatus &&
-                matchesResponsible
+                (!filters.title || itemTitle.includes(normalize(filters.title))) &&
+                (!filters.description || itemDescription.includes(normalize(filters.description))) &&
+                (!filters.location || itemLocation === normalize(filters.location)) &&
+                (!filters.date || itemDate.includes(normalize(filters.date))) &&
+                (!filters.status || itemStatus === normalize(filters.status)) &&
+                (!filters.responsible || itemResponsible === normalize(filters.responsible))
             );
         });
     }, [incidents, globalSearch, filters]);
@@ -363,29 +307,20 @@ function Dashboard() {
 
     const paginatedIncidents = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-
-        return filteredIncidents.slice(startIndex, endIndex);
+        return filteredIncidents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     }, [filteredIncidents, currentPage]);
 
     const stats = useMemo(() => {
-        const total = incidents.length;
-        const open = incidents.filter(item => item.status === 'OPEN').length;
-        const progress = incidents.filter(item => item.status === 'IN_PROGRESS').length;
-        const closed = incidents.filter(item => item.status === 'CLOSED' || item.status === 'RESOLVED').length;
-
         return {
-            total,
-            open,
-            progress,
-            closed
+            total: incidents.length,
+            open: incidents.filter(item => item.status === 'OPEN').length,
+            progress: incidents.filter(item => item.status === 'IN_PROGRESS').length,
+            closed: incidents.filter(item => item.status === 'CLOSED' || item.status === 'RESOLVED').length
         };
     }, [incidents]);
 
     function renderFilterPopup(column) {
-        if (openFilter !== column.key) {
-            return null;
-        }
+        if (openFilter !== column.key) return null;
 
         const isTextFilter = column.type === 'text';
         const selectOptions = options[column.key] || [];
@@ -442,9 +377,7 @@ function Dashboard() {
     }
 
     function renderPagination() {
-        if (totalPages <= 1) {
-            return null;
-        }
+        if (totalPages <= 1) return null;
 
         return (
             <div className="pagination">
@@ -480,35 +413,36 @@ function Dashboard() {
 
     return (
         <div className="dashboard-page">
-
-            <aside className="sidebar">
-                <div className="sidebar-logo">
-                    SecurityApp
-                </div>
-
-                <nav className="sidebar-menu">
-                    <a href="/dashboard" className="sidebar-link active">
-                        Инциденты
-                    </a>
-
-                    <a href="/profile" className="sidebar-link">
-                        Профиль
-                    </a>
-
-                    <button className="logout-btn" onClick={logout}>
-                        Выйти
-                    </button>
-                </nav>
-            </aside>
-
             <main className="dashboard-content">
+                <header className="topbar">
+                    <div>
+                        <div className="topbar-logo">Безопасность образовательных учреждений</div>
+                        <div className="topbar-subtitle">
+                            Система мониторинга инцидентов безопасности
+                        </div>
+                    </div>
 
-                <header className="dashboard-header">
+                    <div className="topbar-actions">
+                    <button
+                        className="profile-circle"
+                        onClick={() => navigate('/profile')}
+                        title="Профиль"
+                    >
+                        <img src="/avatar.jpeg" alt="Профиль" />
+                    </button>
+
+                        <button className="logout-btn" onClick={logout}>
+                            Выйти
+                        </button>
+                    </div>
+                </header>
+
+                <section className="dashboard-header">
                     <div>
                         <h1>Панель инцидентов</h1>
                         <p>Мониторинг инцидентов безопасности образовательного учреждения</p>
                     </div>
-                </header>
+                </section>
 
                 <section className="stats-grid">
                     <div className="stat-card">
@@ -760,9 +694,7 @@ function Dashboard() {
                         <p className="empty-message">По заданным условиям инциденты не найдены</p>
                     )}
                 </section>
-
             </main>
-
         </div>
     );
 }

@@ -1,0 +1,150 @@
+.profile-page {
+    min-height: 100vh;
+    background: #f4f7fb;
+    font-family: Arial, sans-serif;
+    padding: 28px 36px 36px;
+    box-sizing: border-box;
+}
+
+.profile-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 34px;
+    background: white;
+    border-radius: 18px;
+    padding: 18px 22px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.profile-logo {
+    font-size: 25px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.profile-topbar-subtitle {
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.profile-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.profile-topbar-actions button,
+.profile-actions button {
+    padding: 13px 18px;
+    border: none;
+    border-radius: 12px;
+    background: #2563eb;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.profile-topbar-actions button:hover,
+.profile-actions button:hover {
+    background: #1d4ed8;
+}
+
+.profile-content {
+    display: flex;
+    justify-content: center;
+}
+
+.profile-card {
+    width: 100%;
+    max-width: 900px;
+    background: white;
+    border-radius: 22px;
+    padding: 38px 42px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+}
+
+.profile-card h1 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 34px;
+}
+
+.profile-subtitle {
+    margin-top: 8px;
+    margin-bottom: 30px;
+    color: #64748b;
+    font-size: 16px;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 22px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.profile-row span {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.profile-row strong {
+    color: #0f172a;
+    font-size: 16px;
+}
+
+.role-badge {
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534 !important;
+    text-transform: uppercase;
+    font-size: 13px !important;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 30px;
+}
+
+.logout-profile-btn {
+    background: #dc2626 !important;
+}
+
+.logout-profile-btn:hover {
+    background: #b91c1c !important;
+}
+
+.profile-row input {
+    width: 280px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    outline: none;
+    font-size: 14px;
+}
+
+.profile-row input:focus {
+    border-color: #2563eb;
+}
+
+.cancel-btn {
+    background: #64748b !important;
+}
+
+.cancel-btn:hover {
+    background: #475569 !important;
+}
