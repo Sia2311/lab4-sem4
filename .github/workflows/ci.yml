@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   check-project:
@@ -20,6 +23,10 @@ jobs:
 
       - name: Install backend dependencies
         run: npm install
+        working-directory: backend
+
+      - name: Check backend start
+        run: timeout 10s npm run dev || code=$?; if [ "$code" = "124" ]; then exit 0; else exit "$code"; fi
         working-directory: backend
 
       - name: Install frontend dependencies
