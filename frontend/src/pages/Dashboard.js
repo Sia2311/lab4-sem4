@@ -50,6 +50,8 @@ const columns = [
     }
 ];
 
+const ITEMS_PER_PAGE = 5;
+
 function normalize(value) {
     return String(value ?? '').trim().toLowerCase();
 }
@@ -79,12 +81,18 @@ function Dashboard() {
     const [filters, setFilters] = useState(initialFilters);
     const [openFilter, setOpenFilter] = useState(null);
 
+    const [currentPage, setCurrentPage] = useState(1);
+
     const popupRef = useRef(null);
     const activeInputRef = useRef(null);
 
     useEffect(() => {
         fetchIncidents();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [globalSearch, filters]);
 
     useEffect(() => {
         if (!openFilter) {
@@ -159,6 +167,7 @@ function Dashboard() {
             setDescription('');
             setLocation('');
             setResponsible('');
+            setCurrentPage(1);
 
             fetchIncidents();
         } catch (error) {
@@ -273,6 +282,7 @@ function Dashboard() {
         setGlobalSearch('');
         setFilters(initialFilters);
         setOpenFilter(null);
+        setCurrentPage(1);
     }
 
     function toggleFilter(name) {
@@ -349,6 +359,15 @@ function Dashboard() {
         });
     }, [incidents, globalSearch, filters]);
 
+    const totalPages = Math.ceil(filteredIncidents.length / ITEMS_PER_PAGE);
+
+    const paginatedIncidents = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+
+        return filteredIncidents.slice(startIndex, endIndex);
+    }, [filteredIncidents, currentPage]);
+
     const stats = useMemo(() => {
         const total = incidents.length;
         const open = incidents.filter(item => item.status === 'OPEN').length;
@@ -418,6 +437,43 @@ function Dashboard() {
                         </button>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    function renderPagination() {
+        if (totalPages <= 1) {
+            return null;
+        }
+
+        return (
+            <div className="pagination">
+                <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                    Назад
+                </button>
+
+                {Array.from({ length: totalPages }, (_, index) => (
+                    <button
+                        key={index + 1}
+                        type="button"
+                        className={currentPage === index + 1 ? 'active' : ''}
+                        onClick={() => setCurrentPage(index + 1)}
+                    >
+                        {index + 1}
+                    </button>
+                ))}
+
+                <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                    Вперёд
+                </button>
             </div>
         );
     }
@@ -552,148 +608,152 @@ function Dashboard() {
                     {incidents.length === 0 ? (
                         <p className="empty-message">Инциденты отсутствуют</p>
                     ) : (
-                        <table className="incidents-table">
-                            <thead>
-                                <tr>
-                                    {columns.map((column) => (
-                                        <th key={column.key}>
-                                            <div className="th-content">
-                                                <span>{column.label}</span>
+                        <>
+                            <table className="incidents-table">
+                                <thead>
+                                    <tr>
+                                        {columns.map((column) => (
+                                            <th key={column.key}>
+                                                <div className="th-content">
+                                                    <span>{column.label}</span>
 
-                                                <button
-                                                    type="button"
-                                                    className={`filter-icon-button ${isFilterActive(column.key) ? 'active' : ''}`}
-                                                    onClick={() => toggleFilter(column.key)}
-                                                    title="Фильтр"
-                                                >
-                                                    ▼
-                                                </button>
-                                            </div>
-
-                                            {renderFilterPopup(column)}
-                                        </th>
-                                    ))}
-
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {filteredIncidents.map(item => (
-                                    <tr key={item.id}>
-                                        {editingId === item.id ? (
-                                            <>
-                                                <td>
-                                                    <input
-                                                        className="table-input"
-                                                        value={editTitle}
-                                                        onChange={(e) => setEditTitle(e.target.value)}
-                                                    />
-                                                </td>
-
-                                                <td>
-                                                    <input
-                                                        className="table-input"
-                                                        value={editDescription}
-                                                        onChange={(e) => setEditDescription(e.target.value)}
-                                                    />
-                                                </td>
-
-                                                <td>
-                                                    <input
-                                                        className="table-input"
-                                                        value={editLocation}
-                                                        onChange={(e) => setEditLocation(e.target.value)}
-                                                    />
-                                                </td>
-
-                                                <td>{item.date}</td>
-
-                                                <td>
-                                                    <select
-                                                        className="table-input"
-                                                        value={editStatus}
-                                                        onChange={(e) => setEditStatus(e.target.value)}
+                                                    <button
+                                                        type="button"
+                                                        className={`filter-icon-button ${isFilterActive(column.key) ? 'active' : ''}`}
+                                                        onClick={() => toggleFilter(column.key)}
+                                                        title="Фильтр"
                                                     >
-                                                        <option value="OPEN">OPEN</option>
-                                                        <option value="IN_PROGRESS">IN_PROGRESS</option>
-                                                        <option value="CLOSED">CLOSED</option>
-                                                    </select>
-                                                </td>
+                                                        ▼
+                                                    </button>
+                                                </div>
 
-                                                <td>
-                                                    <input
-                                                        className="table-input"
-                                                        value={editResponsible}
-                                                        onChange={(e) => setEditResponsible(e.target.value)}
-                                                    />
-                                                </td>
+                                                {renderFilterPopup(column)}
+                                            </th>
+                                        ))}
 
-                                                <td>
-                                                    <div className="table-actions">
-                                                        <button
-                                                            className="action-btn save-btn"
-                                                            onClick={() => updateIncident(item.id)}
-                                                        >
-                                                            Сохранить
-                                                        </button>
-
-                                                        <button
-                                                            className="action-btn cancel-btn"
-                                                            onClick={cancelEdit}
-                                                        >
-                                                            Отмена
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <td>{item.title}</td>
-                                                <td>{item.description}</td>
-                                                <td>{item.location}</td>
-                                                <td>{item.date}</td>
-
-                                                <td>
-                                                    <span className={getStatusClass(item.status)}>
-                                                        {item.status}
-                                                    </span>
-                                                </td>
-
-                                                <td>{item.responsible}</td>
-
-                                                <td>
-                                                    <div className="table-actions">
-                                                        <button
-                                                            className="action-btn edit-btn"
-                                                            onClick={() => startEdit(item)}
-                                                        >
-                                                            Изменить
-                                                        </button>
-
-                                                        {item.status !== 'CLOSED' && (
-                                                            <button
-                                                                className="action-btn close-btn"
-                                                                onClick={() => closeIncident(item)}
-                                                            >
-                                                                Закрыть
-                                                            </button>
-                                                        )}
-
-                                                        <button
-                                                            className="action-btn delete-btn"
-                                                            onClick={() => deleteIncident(item.id)}
-                                                        >
-                                                            Удалить
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </>
-                                        )}
+                                        <th>Действия</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+
+                                <tbody>
+                                    {paginatedIncidents.map(item => (
+                                        <tr key={item.id}>
+                                            {editingId === item.id ? (
+                                                <>
+                                                    <td>
+                                                        <input
+                                                            className="table-input"
+                                                            value={editTitle}
+                                                            onChange={(e) => setEditTitle(e.target.value)}
+                                                        />
+                                                    </td>
+
+                                                    <td>
+                                                        <input
+                                                            className="table-input"
+                                                            value={editDescription}
+                                                            onChange={(e) => setEditDescription(e.target.value)}
+                                                        />
+                                                    </td>
+
+                                                    <td>
+                                                        <input
+                                                            className="table-input"
+                                                            value={editLocation}
+                                                            onChange={(e) => setEditLocation(e.target.value)}
+                                                        />
+                                                    </td>
+
+                                                    <td>{item.date}</td>
+
+                                                    <td>
+                                                        <select
+                                                            className="table-input"
+                                                            value={editStatus}
+                                                            onChange={(e) => setEditStatus(e.target.value)}
+                                                        >
+                                                            <option value="OPEN">OPEN</option>
+                                                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                                            <option value="CLOSED">CLOSED</option>
+                                                        </select>
+                                                    </td>
+
+                                                    <td>
+                                                        <input
+                                                            className="table-input"
+                                                            value={editResponsible}
+                                                            onChange={(e) => setEditResponsible(e.target.value)}
+                                                        />
+                                                    </td>
+
+                                                    <td>
+                                                        <div className="table-actions">
+                                                            <button
+                                                                className="action-btn save-btn"
+                                                                onClick={() => updateIncident(item.id)}
+                                                            >
+                                                                Сохранить
+                                                            </button>
+
+                                                            <button
+                                                                className="action-btn cancel-btn"
+                                                                onClick={cancelEdit}
+                                                            >
+                                                                Отмена
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td>{item.title}</td>
+                                                    <td>{item.description}</td>
+                                                    <td>{item.location}</td>
+                                                    <td>{item.date}</td>
+
+                                                    <td>
+                                                        <span className={getStatusClass(item.status)}>
+                                                            {item.status}
+                                                        </span>
+                                                    </td>
+
+                                                    <td>{item.responsible}</td>
+
+                                                    <td>
+                                                        <div className="table-actions">
+                                                            <button
+                                                                className="action-btn edit-btn"
+                                                                onClick={() => startEdit(item)}
+                                                            >
+                                                                Изменить
+                                                            </button>
+
+                                                            {item.status !== 'CLOSED' && (
+                                                                <button
+                                                                    className="action-btn close-btn"
+                                                                    onClick={() => closeIncident(item)}
+                                                                >
+                                                                    Закрыть
+                                                                </button>
+                                                            )}
+
+                                                            <button
+                                                                className="action-btn delete-btn"
+                                                                onClick={() => deleteIncident(item.id)}
+                                                            >
+                                                                Удалить
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {renderPagination()}
+                        </>
                     )}
 
                     {incidents.length > 0 && filteredIncidents.length === 0 && (
