@@ -162,3 +162,18 @@
 
     font-size: 14px;
 }
+
+.auth-text {
+    margin-bottom: 24px;
+
+    text-align: center;
+
+    color: rgba(255, 255, 255, 0.85);
+
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.auth-text strong {
+    color: white;
+}

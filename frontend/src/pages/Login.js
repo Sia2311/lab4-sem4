@@ -8,14 +8,16 @@ import '../styles/auth.css';
 function Login() {
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState('admin@example.com');
+    const [email, setEmail] = useState('cojodo1599@codoteam.com');
     const [password, setPassword] = useState('123456');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
 
         setError('');
+        setIsLoading(true);
 
         try {
             const response = await api.post('/auth/login', {
@@ -23,11 +25,20 @@ function Login() {
                 password
             });
 
-            localStorage.setItem('token', response.data.token);
+            if (response.data.twoFactorRequired) {
+                localStorage.setItem('pendingEmail', response.data.email);
+                navigate('/verify-code');
+                return;
+            }
 
-            navigate('/dashboard');
+            setError('Неожиданный ответ сервера');
         } catch (error) {
-            setError('Неверный email или пароль');
+            setError(
+                error.response?.data?.message ||
+                'Ошибка входа'
+            );
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -69,8 +80,12 @@ function Login() {
                         </div>
                     )}
 
-                    <button className="auth-btn" type="submit">
-                        ВОЙТИ
+                    <button
+                        className="auth-btn"
+                        type="submit"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'ОТПРАВКА КОДА...' : 'ВОЙТИ'}
                     </button>
 
                 </form>

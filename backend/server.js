@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -28,18 +29,32 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+
     email: {
         type: String,
         required: true,
         unique: true
     },
+
     passwordHash: {
         type: String,
         required: true
     },
+
     role: {
         type: String,
+        enum: ['user', 'admin'],
         default: 'user'
+    },
+
+    twoFactorCode: {
+        type: String,
+        default: null
+    },
+
+    twoFactorExpires: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
@@ -50,23 +65,28 @@ const incidentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+
     description: {
         type: String,
         required: true
     },
+
     location: {
         type: String,
         required: true
     },
+
     status: {
         type: String,
         required: true,
         default: 'OPEN'
     },
+
     responsible: {
         type: String,
         required: true
     },
+
     date: {
         type: String,
         required: true
@@ -78,17 +98,68 @@ const incidentSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Incident = mongoose.model('Incident', incidentSchema);
 
+function createToken(user) {
+    return jwt.sign(
+        {
+            id: user._id,
+            email: user.email,
+            role: user.role
+        },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+}
+
+function generateTwoFactorCode() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+const mailTransporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: Number(process.env.MAIL_PORT),
+    secure: process.env.MAIL_SECURE === 'true',
+    auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASSWORD
+    }
+});
+
+async function sendTwoFactorCode(email, code) {
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
+        throw new Error('Не настроены данные почты в .env');
+    }
+
+    await mailTransporter.sendMail({
+        from: `"Система инцидентов" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: 'Код подтверждения входа',
+        text: `Ваш код подтверждения: ${code}. Код действует 5 минут.`,
+        html: `
+            <div style="font-family: Arial, sans-serif;">
+                <h2>Код подтверждения входа</h2>
+                <p>Ваш код:</p>
+                <h1 style="letter-spacing: 4px;">${code}</h1>
+                <p>Код действует 5 минут.</p>
+            </div>
+        `
+    });
+}
+
 function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-        return res.status(401).json({ message: 'Токен отсутствует' });
+        return res.status(401).json({
+            message: 'Токен отсутствует'
+        });
     }
 
     const token = authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ message: 'Токен отсутствует' });
+        return res.status(401).json({
+            message: 'Токен отсутствует'
+        });
     }
 
     try {
@@ -96,8 +167,20 @@ function authMiddleware(req, res, next) {
         req.user = decoded;
         next();
     } catch (error) {
-        return res.status(401).json({ message: 'Недействительный токен' });
+        return res.status(401).json({
+            message: 'Недействительный токен'
+        });
     }
+}
+
+function adminMiddleware(req, res, next) {
+    if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({
+            message: 'Доступ разрешён только администратору'
+        });
+    }
+
+    next();
 }
 
 app.get('/', (req, res) => {
@@ -116,7 +199,9 @@ app.post('/api/auth/register', async (req, res) => {
             });
         }
 
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({
+            email
+        });
 
         if (existingUser) {
             return res.status(400).json({
@@ -144,7 +229,9 @@ app.post('/api/auth/register', async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -158,7 +245,9 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            email
+        });
 
         if (!user) {
             return res.status(401).json({
@@ -180,15 +269,77 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        const token = jwt.sign(
-            {
-                id: user._id,
-                email: user.email,
-                role: user.role
-            },
-            JWT_SECRET,
-            { expiresIn: '1h' }
-        );
+        const code = generateTwoFactorCode();
+
+        user.twoFactorCode = code;
+        user.twoFactorExpires = new Date(Date.now() + 5 * 60 * 1000);
+
+        await user.save();
+
+        await sendTwoFactorCode(user.email, code);
+
+        res.status(200).json({
+            message: 'Код подтверждения отправлен на почту',
+            twoFactorRequired: true,
+            email: user.email
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Ошибка отправки кода подтверждения'
+        });
+    }
+});
+
+app.post('/api/auth/verify-code', async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({
+                message: 'Введите email и код подтверждения'
+            });
+        }
+
+        const user = await User.findOne({
+            email
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'Пользователь не найден'
+            });
+        }
+
+        if (!user.twoFactorCode || !user.twoFactorExpires) {
+            return res.status(400).json({
+                message: 'Код подтверждения не был создан'
+            });
+        }
+
+        if (new Date() > user.twoFactorExpires) {
+            user.twoFactorCode = null;
+            user.twoFactorExpires = null;
+
+            await user.save();
+
+            return res.status(400).json({
+                message: 'Срок действия кода истёк'
+            });
+        }
+
+        if (user.twoFactorCode !== code) {
+            return res.status(400).json({
+                message: 'Неверный код подтверждения'
+            });
+        }
+
+        user.twoFactorCode = null;
+        user.twoFactorExpires = null;
+
+        await user.save();
+
+        const token = createToken(user);
 
         res.status(200).json({
             message: 'Вход выполнен успешно',
@@ -202,7 +353,9 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -224,7 +377,9 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -259,13 +414,17 @@ app.put('/api/profile', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
 app.get('/api/incidents', async (req, res) => {
     try {
-        const incidents = await Incident.find().sort({ createdAt: -1 });
+        const incidents = await Incident.find().sort({
+            createdAt: -1
+        });
 
         res.status(200).json(
             incidents.map(item => ({
@@ -282,7 +441,9 @@ app.get('/api/incidents', async (req, res) => {
         );
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -309,7 +470,9 @@ app.get('/api/incidents/:id', async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -348,7 +511,9 @@ app.post('/api/incidents', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -385,7 +550,9 @@ app.put('/api/incidents/:id', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 
@@ -404,7 +571,149 @@ app.delete('/api/incidents/:id', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Ошибка сервера' });
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
+    }
+});
+
+app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const users = await User.find()
+            .select('-passwordHash -twoFactorCode -twoFactorExpires')
+            .sort({
+                createdAt: -1
+            });
+
+        res.status(200).json(
+            users.map(user => ({
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt
+            }))
+        );
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
+    }
+});
+
+app.patch('/api/admin/users/:id/role', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const { role } = req.body;
+
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).json({
+                message: 'Некорректная роль пользователя'
+            });
+        }
+
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'Пользователь не найден'
+            });
+        }
+
+        user.role = role;
+
+        await user.save();
+
+        res.status(200).json({
+            message: 'Роль пользователя обновлена',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
+    }
+});
+
+app.delete('/api/admin/users/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        if (String(req.user.id) === String(req.params.id)) {
+            return res.status(400).json({
+                message: 'Нельзя удалить самого себя'
+            });
+        }
+
+        const deletedUser = await User.findByIdAndDelete(req.params.id);
+
+        if (!deletedUser) {
+            return res.status(404).json({
+                message: 'Пользователь не найден'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Пользователь удалён'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
+    }
+});
+
+app.get('/api/admin/incidents', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const incidents = await Incident.find().sort({
+            createdAt: -1
+        });
+
+        res.status(200).json(
+            incidents.map(item => ({
+                id: item._id,
+                title: item.title,
+                description: item.description,
+                location: item.location,
+                status: item.status,
+                responsible: item.responsible,
+                date: item.date,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt
+            }))
+        );
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
+    }
+});
+
+app.delete('/api/admin/incidents/:id', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const deletedIncident = await Incident.findByIdAndDelete(req.params.id);
+
+        if (!deletedIncident) {
+            return res.status(404).json({
+                message: 'Инцидент не найден'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Инцидент удалён'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Ошибка сервера'
+        });
     }
 });
 

@@ -18,7 +18,13 @@ api.interceptors.response.use(
     (response) => response,
 
     (error) => {
-        if (error.response) {
+        const requestUrl = error.config?.url || '';
+        const isAuthRequest =
+            requestUrl.includes('/auth/login') ||
+            requestUrl.includes('/auth/register') ||
+            requestUrl.includes('/auth/verify-code');
+
+        if (error.response && !isAuthRequest) {
             const status = error.response.status;
 
             if (status === 401) {

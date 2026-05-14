@@ -1,17 +1,22 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyCode from './pages/VerifyCode';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 
 function App() {
-
     return (
         <BrowserRouter>
-
             <Routes>
+
+                <Route
+                    path="/"
+                    element={<Navigate to="/login" replace />}
+                />
 
                 <Route
                     path="/login"
@@ -21,6 +26,11 @@ function App() {
                 <Route
                     path="/register"
                     element={<Register />}
+                />
+
+                <Route
+                    path="/verify-code"
+                    element={<VerifyCode />}
                 />
 
                 <Route
@@ -41,9 +51,16 @@ function App() {
                     }
                 />
 
+                <Route
+                    path="/admin"
+                    element={
+                        <ProtectedRoute>
+                            <Admin />
+                        </ProtectedRoute>
+                    }
+                />
 
             </Routes>
-
         </BrowserRouter>
     );
 }
