@@ -1,0 +1,103 @@
+.floor-map-section {
+    margin-top: 32px;
+}
+
+.floor-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.floor-map-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #061a35;
+}
+
+.floor-map-header select {
+    padding: 10px 14px;
+    border: 1px solid #cbd7e6;
+    border-radius: 10px;
+    background: #ffffff;
+    font-size: 14px;
+}
+
+.floor-map-selected {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: #1f7a3f;
+    font-weight: 600;
+}
+
+.floor-map-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    border: 1px solid #d8e1ec;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.floor-map-image {
+    display: block;
+    width: 100%;
+    cursor: crosshair;
+}
+
+.floor-map-marker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px rgba(239, 35, 60, 0.25);
+    cursor: pointer;
+    z-index: 5;
+}
+
+.incident-open {
+    background: #ef233c;
+}
+
+.incident-progress {
+    background: #ffb703;
+}
+
+.incident-closed {
+    background: #2a9d8f;
+}
+
+.new-incident-marker {
+    background: #4361ee;
+    pointer-events: none;
+}
+
+.incident-tooltip {
+    position: absolute;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    display: block;
+    min-width: 230px;
+    padding: 12px;
+    background: #061a35;
+    color: #ffffff;
+    border-radius: 12px;
+    font-size: 13px;
+    z-index: 30;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+.incident-tooltip strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.incident-tooltip span {
+    display: block;
+    margin-top: 4px;
+}

@@ -5,29 +5,76 @@ import api from '../api/axios';
 
 import '../styles/admin.css';
 
+const roles = [
+    { value: 'student', label: 'Студент' },
+    { value: 'teacher', label: 'Преподаватель' },
+    { value: 'security', label: 'Охрана' },
+    { value: 'admin', label: 'Администратор' }
+];
+
+function getActionLabel(action) {
+    const labels = {
+        CREATE_INCIDENT: 'Создание инцидента',
+        UPDATE_INCIDENT: 'Изменение инцидента',
+        DELETE_INCIDENT: 'Удаление инцидента',
+        ADMIN_DELETE_INCIDENT: 'Удаление инцидента',
+        UPDATE_USER_ROLE: 'Изменение роли',
+        DELETE_USER: 'Удаление пользователя'
+    };
+
+    return labels[action] || action;
+}
+
+function getActionClass(action) {
+    if (action.includes('CREATE')) return 'log-action create';
+    if (action.includes('UPDATE')) return 'log-action update';
+    if (action.includes('DELETE')) return 'log-action delete';
+
+    return 'log-action';
+}
+
 function Admin() {
     const navigate = useNavigate();
 
     const [users, setUsers] = useState([]);
     const [incidents, setIncidents] = useState([]);
+    const [logs, setLogs] = useState([]);
     const [error, setError] = useState('');
 
     useEffect(() => {
         fetchAdminData();
     }, []);
 
+    function getAuthHeaders() {
+        const token = localStorage.getItem('token');
+
+        return {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        };
+    }
+
     async function fetchAdminData() {
         try {
             setError('');
 
-            const usersResponse = await api.get('/admin/users');
-            const incidentsResponse = await api.get('/admin/incidents');
+            const usersResponse = await api.get('/admin/users', getAuthHeaders());
+            const incidentsResponse = await api.get('/admin/incidents', getAuthHeaders());
+            const logsResponse = await api.get('/admin/audit-logs', getAuthHeaders());
 
             setUsers(usersResponse.data);
             setIncidents(incidentsResponse.data);
+            setLogs(logsResponse.data);
         } catch (error) {
             console.error(error);
-
+        
+            if (error.response?.status === 403 || error.response?.status === 401) {
+                alert('Доступ в админ-панель разрешён только администратору');
+                navigate('/dashboard');
+                return;
+            }
+        
             setError(
                 error.response?.data?.message ||
                 'Ошибка загрузки данных админ-панели'
@@ -37,9 +84,11 @@ function Admin() {
 
     async function changeUserRole(userId, role) {
         try {
-            await api.patch(`/admin/users/${userId}/role`, {
-                role
-            });
+            await api.patch(
+                `/admin/users/${userId}/role`,
+                { role },
+                getAuthHeaders()
+            );
 
             fetchAdminData();
         } catch (error) {
@@ -58,7 +107,7 @@ function Admin() {
         if (!isConfirmed) return;
 
         try {
-            await api.delete(`/admin/users/${userId}`);
+            await api.delete(`/admin/users/${userId}`, getAuthHeaders());
             fetchAdminData();
         } catch (error) {
             console.error(error);
@@ -76,7 +125,7 @@ function Admin() {
         if (!isConfirmed) return;
 
         try {
-            await api.delete(`/admin/incidents/${incidentId}`);
+            await api.delete(`/admin/incidents/${incidentId}`, getAuthHeaders());
             fetchAdminData();
         } catch (error) {
             console.error(error);
@@ -95,19 +144,16 @@ function Admin() {
 
     return (
         <div className="admin-page">
-
             <header className="admin-header">
-
                 <div>
                     <h1>Админ-панель</h1>
 
                     <p>
-                        Управление пользователями и инцидентами системы
+                        Управление пользователями, инцидентами и журналом действий
                     </p>
                 </div>
 
                 <div className="admin-header-actions">
-
                     <button onClick={() => navigate('/dashboard')}>
                         Инциденты
                     </button>
@@ -119,21 +165,34 @@ function Admin() {
                     <button className="logout-btn" onClick={logout}>
                         Выйти
                     </button>
-
                 </div>
-
             </header>
 
             <main className="admin-content">
-
                 {error && (
                     <div className="admin-error">
                         {error}
                     </div>
                 )}
 
-                <section className="admin-card">
+                <section className="admin-stats-grid">
+                    <div className="admin-stat-card">
+                        <span>Пользователи</span>
+                        <strong>{users.length}</strong>
+                    </div>
 
+                    <div className="admin-stat-card">
+                        <span>Инциденты</span>
+                        <strong>{incidents.length}</strong>
+                    </div>
+
+                    <div className="admin-stat-card">
+                        <span>Записи журнала</span>
+                        <strong>{logs.length}</strong>
+                    </div>
+                </section>
+
+                <section className="admin-card">
                     <div className="admin-card-header">
                         <h2>Пользователи</h2>
                         <span>{users.length}</span>
@@ -141,7 +200,6 @@ function Admin() {
 
                     <div className="admin-table-wrapper">
                         <table className="admin-table">
-
                             <thead>
                                 <tr>
                                     <th>Имя</th>
@@ -155,7 +213,6 @@ function Admin() {
                             <tbody>
                                 {users.map(user => (
                                     <tr key={user.id}>
-
                                         <td>{user.name}</td>
 
                                         <td>{user.email}</td>
@@ -167,13 +224,11 @@ function Admin() {
                                                     changeUserRole(user.id, e.target.value)
                                                 }
                                             >
-                                                <option value="user">
-                                                    user
-                                                </option>
-
-                                                <option value="admin">
-                                                    admin
-                                                </option>
+                                                {roles.map(role => (
+                                                    <option key={role.value} value={role.value}>
+                                                        {role.label}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </td>
 
@@ -189,18 +244,14 @@ function Admin() {
                                                 Удалить
                                             </button>
                                         </td>
-
                                     </tr>
                                 ))}
                             </tbody>
-
                         </table>
                     </div>
-
                 </section>
 
                 <section className="admin-card">
-
                     <div className="admin-card-header">
                         <h2>Инциденты</h2>
                         <span>{incidents.length}</span>
@@ -208,7 +259,6 @@ function Admin() {
 
                     <div className="admin-table-wrapper">
                         <table className="admin-table">
-
                             <thead>
                                 <tr>
                                     <th>Название</th>
@@ -223,7 +273,6 @@ function Admin() {
                             <tbody>
                                 {incidents.map(incident => (
                                     <tr key={incident.id}>
-
                                         <td>{incident.title}</td>
 
                                         <td>{incident.location}</td>
@@ -246,18 +295,64 @@ function Admin() {
                                                 Удалить
                                             </button>
                                         </td>
-
                                     </tr>
                                 ))}
                             </tbody>
-
                         </table>
                     </div>
-
                 </section>
 
-            </main>
+                <section className="admin-card">
+                    <div className="admin-card-header">
+                        <h2>Журнал действий</h2>
+                        <span>{logs.length}</span>
+                    </div>
 
+                    {logs.length === 0 ? (
+                        <p className="admin-empty">Журнал действий пока пуст</p>
+                    ) : (
+                        <div className="audit-log-list">
+                            {logs.map(log => (
+                                <div className="audit-log-item" key={log.id}>
+                                    <div className="audit-log-icon">
+                                        {log.action.includes('DELETE') ? '−' : log.action.includes('CREATE') ? '+' : '↻'}
+                                    </div>
+
+                                    <div className="audit-log-main">
+                                        <div className="audit-log-top">
+                                            <span className={getActionClass(log.action)}>
+                                                {getActionLabel(log.action)}
+                                            </span>
+
+                                            <span className="audit-log-date">
+                                                {new Date(log.createdAt).toLocaleString('ru-RU')}
+                                            </span>
+                                        </div>
+
+                                        <div className="audit-log-message">
+                                            {log.message}
+                                        </div>
+
+                                        <div className="audit-log-meta">
+                                            <span>
+                                                Пользователь: {log.userEmail || 'неизвестно'}
+                                            </span>
+
+                                            <span>
+                                                Роль: {log.userRole || '—'}
+                                            </span>
+
+                                            <span>
+                                                Объект: {log.entityType}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            </main>
         </div>
     );
 }

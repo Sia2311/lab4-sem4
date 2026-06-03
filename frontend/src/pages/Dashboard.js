@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import FloorMap from '../components/FloorMap';
 import api from '../api/axios';
 
 import '../styles/dashboard.css';
@@ -37,11 +38,13 @@ function Dashboard() {
     const navigate = useNavigate();
 
     const [incidents, setIncidents] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
     const [responsible, setResponsible] = useState('');
+    const [selectedMapPoint, setSelectedMapPoint] = useState(null);
 
     const [editingId, setEditingId] = useState(null);
     const [editTitle, setEditTitle] = useState('');
@@ -58,7 +61,14 @@ function Dashboard() {
     const popupRef = useRef(null);
     const activeInputRef = useRef(null);
 
+    const canEditIncident =
+        currentUser?.role === 'security' || currentUser?.role === 'admin';
+
+    const canDeleteIncident =
+        currentUser?.role === 'admin';
+
     useEffect(() => {
+        fetchProfile();
         fetchIncidents();
     }, []);
 
@@ -96,16 +106,6 @@ function Dashboard() {
         }
     }, [openFilter]);
 
-    async function fetchIncidents() {
-        try {
-            const response = await api.get('/incidents');
-            setIncidents(response.data);
-        } catch (error) {
-            console.error(error);
-            alert(getErrorMessage(error, 'Ошибка при загрузке инцидентов'));
-        }
-    }
-
     function getAuthHeaders() {
         const token = localStorage.getItem('token');
 
@@ -114,6 +114,25 @@ function Dashboard() {
                 Authorization: `Bearer ${token}`
             }
         };
+    }
+
+    async function fetchProfile() {
+        try {
+            const response = await api.get('/profile', getAuthHeaders());
+            setCurrentUser(response.data);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function fetchIncidents() {
+        try {
+            const response = await api.get('/incidents', getAuthHeaders());
+            setIncidents(response.data);
+        } catch (error) {
+            console.error(error);
+            alert(getErrorMessage(error, 'Ошибка при загрузке инцидентов'));
+        }
     }
 
     async function createIncident(e) {
@@ -128,7 +147,8 @@ function Dashboard() {
                     location,
                     responsible,
                     status: 'OPEN',
-                    date: new Date().toISOString().split('T')[0]
+                    date: new Date().toISOString().split('T')[0],
+                    mapPoint: selectedMapPoint
                 },
                 getAuthHeaders()
             );
@@ -137,6 +157,7 @@ function Dashboard() {
             setDescription('');
             setLocation('');
             setResponsible('');
+            setSelectedMapPoint(null);
             setCurrentPage(1);
 
             fetchIncidents();
@@ -424,12 +445,12 @@ function Dashboard() {
 
                     <div className="topbar-actions">
                     <button
-                        className="profile-circle"
-                        onClick={() => navigate('/profile')}
-                        title="Профиль"
-                    >
-                        <img src="/avatar.jpeg" alt="Профиль" />
-                    </button>
+    className="profile-circle"
+    onClick={() => navigate('/profile')}
+    title="Профиль"
+>
+    {currentUser?.name ? currentUser.name[0].toUpperCase() : 'П'}
+</button>
 
                         <button className="logout-btn" onClick={logout}>
                             Выйти
@@ -516,6 +537,14 @@ function Dashboard() {
                             Добавить инцидент
                         </button>
                     </form>
+
+                    <FloorMap
+                        incidents={incidents}
+                        onSelectLocation={(locationText, point) => {
+                            setLocation(locationText);
+                            setSelectedMapPoint(point);
+                        }}
+                    />
                 </section>
 
                 <section className="incidents-card">
@@ -655,14 +684,16 @@ function Dashboard() {
 
                                                     <td>
                                                         <div className="table-actions">
-                                                            <button
-                                                                className="action-btn edit-btn"
-                                                                onClick={() => startEdit(item)}
-                                                            >
-                                                                Изменить
-                                                            </button>
+                                                            {canEditIncident && (
+                                                                <button
+                                                                    className="action-btn edit-btn"
+                                                                    onClick={() => startEdit(item)}
+                                                                >
+                                                                    Изменить
+                                                                </button>
+                                                            )}
 
-                                                            {item.status !== 'CLOSED' && (
+                                                            {canEditIncident && item.status !== 'CLOSED' && (
                                                                 <button
                                                                     className="action-btn close-btn"
                                                                     onClick={() => closeIncident(item)}
@@ -671,12 +702,14 @@ function Dashboard() {
                                                                 </button>
                                                             )}
 
-                                                            <button
-                                                                className="action-btn delete-btn"
-                                                                onClick={() => deleteIncident(item.id)}
-                                                            >
-                                                                Удалить
-                                                            </button>
+                                                            {canDeleteIncident && (
+                                                                <button
+                                                                    className="action-btn delete-btn"
+                                                                    onClick={() => deleteIncident(item.id)}
+                                                                >
+                                                                    Удалить
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </>
