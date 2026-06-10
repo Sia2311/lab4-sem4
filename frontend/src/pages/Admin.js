@@ -14,6 +14,8 @@ const roles = [
 
 function getActionLabel(action) {
     const labels = {
+        REGISTER_USER: 'Регистрация',
+        LOGIN_USER: 'Вход в систему',
         CREATE_INCIDENT: 'Создание инцидента',
         UPDATE_INCIDENT: 'Изменение инцидента',
         DELETE_INCIDENT: 'Удаление инцидента',
@@ -26,11 +28,35 @@ function getActionLabel(action) {
 }
 
 function getActionClass(action) {
-    if (action.includes('CREATE')) return 'log-action create';
-    if (action.includes('UPDATE')) return 'log-action update';
-    if (action.includes('DELETE')) return 'log-action delete';
+    if (action.includes('CREATE') || action.includes('REGISTER')) {
+        return 'log-action create';
+    }
+
+    if (action.includes('UPDATE') || action.includes('LOGIN')) {
+        return 'log-action update';
+    }
+
+    if (action.includes('DELETE')) {
+        return 'log-action delete';
+    }
 
     return 'log-action';
+}
+
+function getLogIcon(action) {
+    if (action.includes('DELETE')) {
+        return '−';
+    }
+
+    if (action.includes('CREATE') || action.includes('REGISTER')) {
+        return '+';
+    }
+
+    if (action.includes('LOGIN')) {
+        return '↪';
+    }
+
+    return '↻';
 }
 
 function Admin() {
@@ -45,36 +71,27 @@ function Admin() {
         fetchAdminData();
     }, []);
 
-    function getAuthHeaders() {
-        const token = localStorage.getItem('token');
-
-        return {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        };
-    }
 
     async function fetchAdminData() {
         try {
             setError('');
 
-            const usersResponse = await api.get('/admin/users', getAuthHeaders());
-            const incidentsResponse = await api.get('/admin/incidents', getAuthHeaders());
-            const logsResponse = await api.get('/admin/audit-logs', getAuthHeaders());
-
+            const usersResponse = await api.get('/admin/users');
+            const incidentsResponse = await api.get('/admin/incidents');
+            const logsResponse = await api.get('/admin/audit-logs');
+            
             setUsers(usersResponse.data);
             setIncidents(incidentsResponse.data);
             setLogs(logsResponse.data);
         } catch (error) {
             console.error(error);
-        
+
             if (error.response?.status === 403 || error.response?.status === 401) {
                 alert('Доступ в админ-панель разрешён только администратору');
                 navigate('/dashboard');
                 return;
             }
-        
+
             setError(
                 error.response?.data?.message ||
                 'Ошибка загрузки данных админ-панели'
@@ -86,8 +103,7 @@ function Admin() {
         try {
             await api.patch(
                 `/admin/users/${userId}/role`,
-                { role },
-                getAuthHeaders()
+                {role}
             );
 
             fetchAdminData();
@@ -104,10 +120,13 @@ function Admin() {
     async function deleteUser(userId) {
         const isConfirmed = window.confirm('Удалить пользователя?');
 
-        if (!isConfirmed) return;
+        if (!isConfirmed) {
+            return;
+        }
 
         try {
-            await api.delete(`/admin/users/${userId}`, getAuthHeaders());
+            await api.delete(`/admin/users/${userId}`);
+
             fetchAdminData();
         } catch (error) {
             console.error(error);
@@ -122,10 +141,13 @@ function Admin() {
     async function deleteIncident(incidentId) {
         const isConfirmed = window.confirm('Удалить инцидент?');
 
-        if (!isConfirmed) return;
+        if (!isConfirmed) {
+            return;
+        }
 
         try {
-            await api.delete(`/admin/incidents/${incidentId}`, getAuthHeaders());
+            await api.delete(`/admin/incidents/${incidentId}`);
+
             fetchAdminData();
         } catch (error) {
             console.error(error);
@@ -137,9 +159,15 @@ function Admin() {
         }
     }
 
-    function logout() {
-        localStorage.removeItem('token');
-        navigate('/login');
+    async function logout() {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error(error);
+        } finally {
+            localStorage.removeItem('pendingEmail');
+            navigate('/login');
+        }
     }
 
     return (
@@ -220,8 +248,8 @@ function Admin() {
                                         <td>
                                             <select
                                                 value={user.role}
-                                                onChange={(e) =>
-                                                    changeUserRole(user.id, e.target.value)
+                                                onChange={(event) =>
+                                                    changeUserRole(user.id, event.target.value)
                                                 }
                                             >
                                                 {roles.map(role => (
@@ -309,13 +337,15 @@ function Admin() {
                     </div>
 
                     {logs.length === 0 ? (
-                        <p className="admin-empty">Журнал действий пока пуст</p>
+                        <p className="admin-empty">
+                            Журнал действий пока пуст
+                        </p>
                     ) : (
                         <div className="audit-log-list">
                             {logs.map(log => (
                                 <div className="audit-log-item" key={log.id}>
                                     <div className="audit-log-icon">
-                                        {log.action.includes('DELETE') ? '−' : log.action.includes('CREATE') ? '+' : '↻'}
+                                        {getLogIcon(log.action)}
                                     </div>
 
                                     <div className="audit-log-main">
@@ -340,6 +370,14 @@ function Admin() {
 
                                             <span>
                                                 Роль: {log.userRole || '—'}
+                                            </span>
+
+                                            <span>
+                                                IP: {log.ip || '—'}
+                                            </span>
+
+                                            <span>
+                                                Устройство: {log.userAgent ? `${log.userAgent.slice(0, 60)}...` : '—'}
                                             </span>
 
                                             <span>

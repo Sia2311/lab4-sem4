@@ -8,8 +8,8 @@ import '../styles/auth.css';
 function Login() {
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState('cojodo1599@codoteam.com');
-    const [password, setPassword] = useState('123456');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -21,7 +21,7 @@ function Login() {
 
         try {
             const response = await api.post('/auth/login', {
-                email,
+                email: email.trim(),
                 password
             });
 

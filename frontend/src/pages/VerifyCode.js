@@ -31,12 +31,11 @@ function VerifyCode() {
         setIsLoading(true);
 
         try {
-            const response = await api.post('/auth/verify-code', {
+            await api.post('/auth/verify-code', {
                 email,
-                code
+                code: code.trim()
             });
 
-            localStorage.setItem('token', response.data.token);
             localStorage.removeItem('pendingEmail');
 
             navigate('/dashboard');

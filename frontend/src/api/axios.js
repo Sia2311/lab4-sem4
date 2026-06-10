@@ -1,17 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:4000/api'
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:4000/api',
+    withCredentials: true
 });
 
 api.interceptors.response.use(
@@ -22,7 +13,8 @@ api.interceptors.response.use(
         const isAuthRequest =
             requestUrl.includes('/auth/login') ||
             requestUrl.includes('/auth/register') ||
-            requestUrl.includes('/auth/verify-code');
+            requestUrl.includes('/auth/verify-code') ||
+            requestUrl.includes('/auth/logout');
 
         if (error.response && !isAuthRequest) {
             const status = error.response.status;
@@ -30,7 +22,7 @@ api.interceptors.response.use(
             if (status === 401) {
                 alert('Сессия истекла. Выполните вход повторно.');
 
-                localStorage.removeItem('token');
+                localStorage.removeItem('pendingEmail');
 
                 window.location.href = '/login';
             }

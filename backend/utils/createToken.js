@@ -1,17 +1,21 @@
 const jwt = require('jsonwebtoken');
 
-function createToken(user) {
-    const JWT_SECRET = process.env.JWT_SECRET || 'secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET не задан в .env');
+}
+
+function createToken(user) {
     return jwt.sign(
         {
             id: user._id,
-            email: user.email,
             role: user.role
         },
         JWT_SECRET,
         {
-            expiresIn: '1h'
+            expiresIn: JWT_EXPIRES_IN
         }
     );
 }

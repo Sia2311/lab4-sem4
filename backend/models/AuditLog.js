@@ -31,6 +31,16 @@ const auditLogSchema = new mongoose.Schema({
         default: null
     },
 
+    ip: {
+        type: String,
+        default: null
+    },
+
+    userAgent: {
+        type: String,
+        default: null
+    },
+
     message: {
         type: String,
         required: true

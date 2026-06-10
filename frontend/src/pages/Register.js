@@ -20,16 +20,18 @@ function Register() {
 
         try {
             await api.post('/auth/register', {
-                name,
-                email,
-                password,
-                role: 'user'
+                name: name.trim(),
+                email: email.trim(),
+                password
             });
 
             navigate('/login');
 
         } catch (error) {
-            setError('Ошибка регистрации');
+            setError(
+                error.response?.data?.message ||
+                'Ошибка регистрации'
+            );
         }
     }
 

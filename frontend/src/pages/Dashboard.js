@@ -106,19 +106,10 @@ function Dashboard() {
         }
     }, [openFilter]);
 
-    function getAuthHeaders() {
-        const token = localStorage.getItem('token');
-
-        return {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        };
-    }
 
     async function fetchProfile() {
         try {
-            const response = await api.get('/profile', getAuthHeaders());
+            const response = await api.get('/profile');
             setCurrentUser(response.data);
         } catch (error) {
             console.error(error);
@@ -127,7 +118,7 @@ function Dashboard() {
 
     async function fetchIncidents() {
         try {
-            const response = await api.get('/incidents', getAuthHeaders());
+            const response = await api.get('/incidents');
             setIncidents(response.data);
         } catch (error) {
             console.error(error);
@@ -149,8 +140,7 @@ function Dashboard() {
                     status: 'OPEN',
                     date: new Date().toISOString().split('T')[0],
                     mapPoint: selectedMapPoint
-                },
-                getAuthHeaders()
+                }
             );
 
             setTitle('');
@@ -195,8 +185,7 @@ function Dashboard() {
                     location: editLocation,
                     responsible: editResponsible,
                     status: editStatus
-                },
-                getAuthHeaders()
+                }
             );
 
             cancelEdit();
@@ -212,10 +201,8 @@ function Dashboard() {
             await api.put(
                 `/incidents/${item.id}`,
                 {
-                    ...item,
                     status: 'CLOSED'
-                },
-                getAuthHeaders()
+                }
             );
 
             fetchIncidents();
@@ -231,7 +218,7 @@ function Dashboard() {
         if (!isConfirmed) return;
 
         try {
-            await api.delete(`/incidents/${id}`, getAuthHeaders());
+            await api.delete(`/incidents/${id}`);
             fetchIncidents();
         } catch (error) {
             console.error(error);
@@ -239,9 +226,15 @@ function Dashboard() {
         }
     }
 
-    function logout() {
-        localStorage.removeItem('token');
-        navigate('/login');
+    async function logout() {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error(error);
+        } finally {
+            localStorage.removeItem('pendingEmail');
+            navigate('/login');
+        }
     }
 
     function getStatusClass(status) {

@@ -4,7 +4,7 @@ async function getAuditLogs(req, res) {
     try {
         const logs = await AuditLog.find()
             .sort({ createdAt: -1 })
-            .limit(100);
+            .limit(150);
 
         res.status(200).json(
             logs.map(log => ({
@@ -15,6 +15,8 @@ async function getAuditLogs(req, res) {
                 userId: log.userId,
                 userEmail: log.userEmail,
                 userRole: log.userRole,
+                ip: log.ip,
+                userAgent: log.userAgent,
                 message: log.message,
                 createdAt: log.createdAt
             }))

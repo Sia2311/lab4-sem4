@@ -15,6 +15,7 @@ function Profile() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
 
     useEffect(() => {
         fetchProfile();
@@ -44,12 +45,14 @@ function Profile() {
             await api.put('/profile', {
                 name,
                 email,
-                password
+                password,
+                currentPassword
             });
 
             alert('Профиль успешно обновлён');
 
             setPassword('');
+            setCurrentPassword('');
             setIsEditing(false);
 
             fetchProfile();
@@ -132,6 +135,7 @@ function Profile() {
 
                             {isEditing ? (
                                 <input
+                                    type="email"
                                     value={email}
                                     onChange={(e) =>
                                         setEmail(e.target.value)
@@ -154,20 +158,37 @@ function Profile() {
                         </div>
 
                         {isEditing && (
-                            <div className="profile-row">
+                            <>
+                                <div className="profile-row">
 
-                                <span>Новый пароль</span>
+                                    <span>Новый пароль</span>
 
-                                <input
-                                    type="password"
-                                    placeholder="Введите новый пароль"
-                                    value={password}
-                                    onChange={(e) =>
-                                        setPassword(e.target.value)
-                                    }
-                                />
+                                    <input
+                                        type="password"
+                                        placeholder="Оставьте пустым, если не меняете"
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                    />
 
-                            </div>
+                                </div>
+
+                                <div className="profile-row">
+
+                                    <span>Текущий пароль</span>
+
+                                    <input
+                                        type="password"
+                                        placeholder="Нужен для смены email или пароля"
+                                        value={currentPassword}
+                                        onChange={(e) =>
+                                            setCurrentPassword(e.target.value)
+                                        }
+                                    />
+
+                                </div>
+                            </>
                         )}
 
                     </div>
@@ -189,6 +210,9 @@ function Profile() {
                                     onClick={() => {
                                         setIsEditing(false);
                                         setPassword('');
+                                        setCurrentPassword('');
+                                        setName(user.name);
+                                        setEmail(user.email);
                                     }}
                                 >
                                     Отмена
