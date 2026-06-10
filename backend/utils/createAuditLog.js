@@ -1,39 +1,38 @@
 const AuditLog = require('../models/AuditLog');
 
 function getClientIp(req) {
-    const rawIp =
-        req.headers['x-forwarded-for']?.split(',')[0] ||
-        req.socket?.remoteAddress ||
-        req.ip ||
-        null;
-
-    if (!rawIp) {
+    if (!req) {
         return null;
     }
 
-    return rawIp.replace('::ffff:', '');
+    return (
+        req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+        req.socket?.remoteAddress ||
+        req.ip ||
+        null
+    );
 }
 
 async function createAuditLog({
-    req,
+    req = null,
     action,
     entityType,
     entityId = null,
-    message,
-    user = null
+    userId = null,
+    userEmail = null,
+    userRole = null,
+    message
 }) {
     try {
-        const logUser = user || req.user || {};
-
         await AuditLog.create({
             action,
             entityType,
             entityId,
-            userId: logUser.id || logUser._id || null,
-            userEmail: logUser.email || null,
-            userRole: logUser.role || null,
+            userId: userId || req?.user?.id || null,
+            userEmail: userEmail || req?.user?.email || null,
+            userRole: userRole || req?.user?.role || null,
             ip: getClientIp(req),
-            userAgent: req.headers['user-agent'] || null,
+            userAgent: req?.headers?.['user-agent'] || null,
             message
         });
     } catch (error) {

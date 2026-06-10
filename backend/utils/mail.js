@@ -10,16 +10,20 @@ const mailTransporter = nodemailer.createTransport({
     }
 });
 
-async function sendTwoFactorCode(email, code) {
+function checkMailConfig() {
     if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
         throw new Error('Не настроены данные почты в .env');
     }
+}
+
+async function sendTwoFactorCode(email, code) {
+    checkMailConfig();
 
     await mailTransporter.sendMail({
         from: `"Система инцидентов" <${process.env.MAIL_USER}>`,
         to: email,
         subject: 'Код подтверждения входа',
-        text: `Ваш код подтверждения: ${code}. Код действует 5 минут.`,
+        text: `Ваш код подтверждения входа: ${code}. Код действует 5 минут.`,
         html: `
             <div style="font-family: Arial, sans-serif;">
                 <h2>Код подтверждения входа</h2>
@@ -31,6 +35,46 @@ async function sendTwoFactorCode(email, code) {
     });
 }
 
+async function sendRegistrationVerificationCode(email, code) {
+    checkMailConfig();
+
+    await mailTransporter.sendMail({
+        from: `"Система инцидентов" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: 'Подтверждение регистрации',
+        text: `Ваш код подтверждения регистрации: ${code}. Код действует 15 минут.`,
+        html: `
+            <div style="font-family: Arial, sans-serif;">
+                <h2>Подтверждение регистрации</h2>
+                <p>Ваш код:</p>
+                <h1 style="letter-spacing: 4px;">${code}</h1>
+                <p>Код действует 15 минут.</p>
+            </div>
+        `
+    });
+}
+
+async function sendEmailChangeVerificationCode(email, code) {
+    checkMailConfig();
+
+    await mailTransporter.sendMail({
+        from: `"Система инцидентов" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: 'Подтверждение нового email',
+        text: `Ваш код подтверждения нового email: ${code}. Код действует 15 минут.`,
+        html: `
+            <div style="font-family: Arial, sans-serif;">
+                <h2>Подтверждение нового email</h2>
+                <p>Ваш код:</p>
+                <h1 style="letter-spacing: 4px;">${code}</h1>
+                <p>Код действует 15 минут.</p>
+            </div>
+        `
+    });
+}
+
 module.exports = {
-    sendTwoFactorCode
+    sendTwoFactorCode,
+    sendRegistrationVerificationCode,
+    sendEmailChangeVerificationCode
 };

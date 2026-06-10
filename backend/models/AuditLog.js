@@ -3,12 +3,14 @@ const mongoose = require('mongoose');
 const auditLogSchema = new mongoose.Schema({
     action: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
 
     entityType: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
 
     entityId: {
@@ -43,7 +45,8 @@ const auditLogSchema = new mongoose.Schema({
 
     message: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     }
 }, {
     timestamps: true

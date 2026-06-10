@@ -33,7 +33,7 @@ function formatIncident(item) {
 async function getUsers(req, res) {
     try {
         const users = await User.find()
-            .select('-passwordHash -twoFactorCode -twoFactorExpires')
+            .select('-passwordHash -twoFactorCode -twoFactorExpires -twoFactorAttempts -twoFactorLockedUntil')
             .sort({ createdAt: -1 });
 
         res.status(200).json(users.map(formatUser));
@@ -48,6 +48,14 @@ async function updateUserRole(req, res) {
         const { role } = req.body;
 
         if (!allowedRoles.includes(role)) {
+            await createAuditLog({
+                req,
+                action: 'ADMIN_UPDATE_ROLE_FAILED',
+                entityType: 'user',
+                entityId: req.params.id,
+                message: `Администратор попытался назначить некорректную роль: ${role}`
+            });
+
             return res.status(400).json({
                 message: 'Некорректная роль пользователя'
             });
@@ -56,8 +64,12 @@ async function updateUserRole(req, res) {
         const user = await User.findById(req.params.id);
 
         if (!user) {
-            return res.status(404).json({ message: 'Пользователь не найден' });
+            return res.status(404).json({
+                message: 'Пользователь не найден'
+            });
         }
+
+        const oldRole = user.role;
 
         user.role = role;
         await user.save();
@@ -67,7 +79,7 @@ async function updateUserRole(req, res) {
             action: 'UPDATE_USER_ROLE',
             entityType: 'user',
             entityId: user._id,
-            message: `Изменена роль пользователя ${user.email} на ${user.role}`
+            message: `Изменена роль пользователя ${user.email}: ${oldRole} → ${user.role}`
         });
 
         res.status(200).json({
@@ -83,6 +95,14 @@ async function updateUserRole(req, res) {
 async function deleteUser(req, res) {
     try {
         if (String(req.user.id) === String(req.params.id)) {
+            await createAuditLog({
+                req,
+                action: 'ADMIN_SELF_DELETE_BLOCKED',
+                entityType: 'user',
+                entityId: req.params.id,
+                message: 'Заблокирована попытка администратора удалить самого себя'
+            });
+
             return res.status(400).json({
                 message: 'Нельзя удалить самого себя'
             });
@@ -91,7 +111,9 @@ async function deleteUser(req, res) {
         const deletedUser = await User.findByIdAndDelete(req.params.id);
 
         if (!deletedUser) {
-            return res.status(404).json({ message: 'Пользователь не найден' });
+            return res.status(404).json({
+                message: 'Пользователь не найден'
+            });
         }
 
         await createAuditLog({
@@ -126,7 +148,9 @@ async function deleteAdminIncident(req, res) {
         const deletedIncident = await Incident.findByIdAndDelete(req.params.id);
 
         if (!deletedIncident) {
-            return res.status(404).json({ message: 'Инцидент не найден' });
+            return res.status(404).json({
+                message: 'Инцидент не найден'
+            });
         }
 
         await createAuditLog({

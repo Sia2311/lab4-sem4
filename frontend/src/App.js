@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyCode from './pages/VerifyCode';
+import VerifyRegistrationEmail from './pages/VerifyRegistrationEmail';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
@@ -26,6 +27,11 @@ function App() {
                 <Route
                     path="/register"
                     element={<Register />}
+                />
+
+                <Route
+                    path="/verify-registration-email"
+                    element={<VerifyRegistrationEmail />}
                 />
 
                 <Route

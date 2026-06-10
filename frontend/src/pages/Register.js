@@ -11,27 +11,33 @@ function Register() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
 
         setError('');
+        setIsLoading(true);
 
         try {
-            await api.post('/auth/register', {
+            const response = await api.post('/auth/register', {
                 name: name.trim(),
                 email: email.trim(),
                 password
             });
 
-            navigate('/login');
+            localStorage.setItem('pendingRegistrationEmail', response.data.email);
 
+            navigate('/verify-registration-email');
         } catch (error) {
             setError(
                 error.response?.data?.message ||
                 'Ошибка регистрации'
             );
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -73,7 +79,7 @@ function Register() {
 
                         <input
                             type="password"
-                            placeholder="Введите пароль"
+                            placeholder="Минимум 8 символов, буквы и цифры"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -86,8 +92,12 @@ function Register() {
                         </div>
                     )}
 
-                    <button className="auth-btn" type="submit">
-                        ЗАРЕГИСТРИРОВАТЬСЯ
+                    <button
+                        className="auth-btn"
+                        type="submit"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'ОТПРАВКА КОДА...' : 'ЗАРЕГИСТРИРОВАТЬСЯ'}
                     </button>
 
                 </form>

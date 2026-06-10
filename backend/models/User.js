@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
         maxlength: 120
     },
 
+    emailVerified: {
+        type: Boolean,
+        default: true
+    },
+
     passwordHash: {
         type: String,
         required: true

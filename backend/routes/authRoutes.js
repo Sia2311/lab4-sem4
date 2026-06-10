@@ -5,6 +5,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 const {
     register,
+    verifyRegistrationEmail,
     login,
     verifyCode,
     logout
@@ -33,6 +34,7 @@ const verifyCodeLimiter = rateLimit({
 });
 
 router.post('/register', authLimiter, register);
+router.post('/verify-registration-email', verifyCodeLimiter, verifyRegistrationEmail);
 router.post('/login', authLimiter, login);
 router.post('/verify-code', verifyCodeLimiter, verifyCode);
 router.post('/logout', authMiddleware, logout);

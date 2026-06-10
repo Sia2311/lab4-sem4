@@ -17,6 +17,9 @@ function Profile() {
     const [password, setPassword] = useState('');
     const [currentPassword, setCurrentPassword] = useState('');
 
+    const [pendingNewEmail, setPendingNewEmail] = useState(null);
+    const [emailChangeCode, setEmailChangeCode] = useState('');
+
     useEffect(() => {
         fetchProfile();
     }, []);
@@ -29,6 +32,7 @@ function Profile() {
 
             setName(response.data.name);
             setEmail(response.data.email);
+            setPendingNewEmail(response.data.pendingNewEmail || null);
 
         } catch (error) {
             console.error(error);
@@ -42,14 +46,14 @@ function Profile() {
 
     async function updateProfile() {
         try {
-            await api.put('/profile', {
+            const response = await api.put('/profile', {
                 name,
                 email,
                 password,
                 currentPassword
             });
 
-            alert('Профиль успешно обновлён');
+            alert(response.data.message || 'Профиль обновлён');
 
             setPassword('');
             setCurrentPassword('');
@@ -63,6 +67,29 @@ function Profile() {
             alert(
                 error.response?.data?.message ||
                 'Ошибка обновления профиля'
+            );
+        }
+    }
+
+    async function confirmEmailChange() {
+        try {
+            const response = await api.post('/profile/confirm-email-change', {
+                code: emailChangeCode.trim()
+            });
+
+            alert(response.data.message || 'Email подтверждён');
+
+            setEmailChangeCode('');
+            setPendingNewEmail(null);
+
+            fetchProfile();
+
+        } catch (error) {
+            console.error(error);
+
+            alert(
+                error.response?.data?.message ||
+                'Ошибка подтверждения email'
             );
         }
     }
@@ -221,6 +248,40 @@ function Profile() {
                         )}
 
                     </div>
+
+                    {pendingNewEmail && (
+                        <div className="profile-info" style={{ marginTop: '25px' }}>
+
+                            <h2>Подтверждение нового email</h2>
+
+                            <p>
+                                Код отправлен на новый email:
+                                <br />
+                                <strong>{pendingNewEmail}</strong>
+                            </p>
+
+                            <div className="profile-row">
+                                <span>Код</span>
+
+                                <input
+                                    type="text"
+                                    placeholder="Введите 6-значный код"
+                                    value={emailChangeCode}
+                                    maxLength="6"
+                                    onChange={(e) =>
+                                        setEmailChangeCode(e.target.value)
+                                    }
+                                />
+                            </div>
+
+                            <div className="profile-actions">
+                                <button onClick={confirmEmailChange}>
+                                    Подтвердить новый email
+                                </button>
+                            </div>
+
+                        </div>
+                    )}
 
                 </div>
 
